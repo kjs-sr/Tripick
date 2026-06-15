@@ -2,7 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-  // 환경변수에 AI_SERVER_URL이 있으면 그걸 쓰고, 없으면 로컬(127.0.0.1)을 씁니다.
+  // Render 환경변수(AI_SERVER_URL)를 유연하게 가져오고, 없으면 로컬 주소를 기본값으로 사용합니다.
   private get baseUrl(): string {
     return process.env.AI_SERVER_URL || 'http://127.0.0.1:8000';
   }
@@ -19,7 +19,7 @@ export class AppService {
     }
   }
 
-  // 필터, 제외 목록, 강도, 그리고 정확한 매칭을 위한 타겟 ID까지 모두 AI 서버로 넘겨줌
+  // 필터, 제외 목록, 강도, 그리고 정확한 고유 ID(target_id)까지 모두 묶어서 AI 서버로 안전하게 전달합니다.
   async getRecommendation(
     category: string,
     query: string,
@@ -29,14 +29,14 @@ export class AppService {
     limit: number,
     filters?: string,
     excludes?: string,
-    targetId?: string, // 추가: 고유 식별자 수신
+    targetId?: string, // target_id 추가
   ): Promise<any> {
     try {
       let aiServerUrl = `${this.baseUrl}/recommend/${category}?query=${encodeURIComponent(query)}&mode=${mode}&sim_tier=${simTier}&rec_tier=${recTier}&limit=${limit}`;
 
       if (filters) aiServerUrl += `&filters=${encodeURIComponent(filters)}`;
       if (excludes) aiServerUrl += `&excludes=${encodeURIComponent(excludes)}`;
-      if (targetId) aiServerUrl += `&target_id=${encodeURIComponent(targetId)}`; // ID 쿼리 파라미터 추가
+      if (targetId) aiServerUrl += `&target_id=${encodeURIComponent(targetId)}`; // AI 서버 쿼리 스트링에 결합
 
       const response = await fetch(aiServerUrl);
       const data = await response.json();
@@ -50,6 +50,7 @@ export class AppService {
     }
   }
 
+  // 클라우드 환경에 맞게 하드코딩을 제거하고 메타데이터 API 주소를 변환합니다.
   async getMetadata(): Promise<any> {
     try {
       const response = await fetch(`${this.baseUrl}/metadata`);
