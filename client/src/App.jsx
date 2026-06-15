@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 // --- 내장형 아이콘 컴포넌트 ---
 const Gamepad2 = ({ size = 24 }) => (
   <svg
@@ -1373,10 +1374,9 @@ export default function App() {
         let data = null;
 
         try {
-          res = await fetch(
-            `http://localhost:3000/api/metadata?_t=${Date.now()}`,
-            { cache: "no-store" },
-          );
+          res = await fetch(`${API_BASE_URL}/api/metadata?_t=${Date.now()}`, {
+            cache: "no-store",
+          });
           if (res.ok) data = await res.json();
         } catch (e) {}
 
@@ -1509,7 +1509,7 @@ export default function App() {
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `http://localhost:3000/api/search?category=${activeTab}&query=${encodeURIComponent(query)}&_t=${Date.now()}`,
+          `${API_BASE_URL}/api/search?category=${activeTab}&query=${encodeURIComponent(query)}&_t=${Date.now()}`,
           { cache: "no-store" },
         );
         const data = await res.json();
@@ -1762,7 +1762,7 @@ export default function App() {
       }
 
       const response = await fetch(
-        `http://localhost:3000/api/recommend?${queryParams.toString()}`,
+        `${API_BASE_URL}/api/recommend?${queryParams.toString()}`,
         {
           cache: "no-store",
         },
