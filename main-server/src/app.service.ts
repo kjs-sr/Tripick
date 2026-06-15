@@ -2,10 +2,15 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
+  // 환경변수에 AI_SERVER_URL이 있으면 그걸 쓰고, 없으면 로컬(127.0.0.1)을 씁니다.
+  private get baseUrl(): string {
+    return process.env.AI_SERVER_URL || 'http://127.0.0.1:8000';
+  }
+
   // 자동완성 검색을 AI 서버로 넘겨줌
   async searchTitles(category: string, query: string): Promise<any> {
     try {
-      const aiServerUrl = `http://127.0.0.1:8000/search/${category}?query=${encodeURIComponent(query)}`;
+      const aiServerUrl = `${this.baseUrl}/search/${category}?query=${encodeURIComponent(query)}`;
       const response = await fetch(aiServerUrl);
       return await response.json();
     } catch (error) {
@@ -26,7 +31,7 @@ export class AppService {
     excludes?: string,
   ): Promise<any> {
     try {
-      let aiServerUrl = `http://127.0.0.1:8000/recommend/${category}?query=${encodeURIComponent(query)}&mode=${mode}&sim_tier=${simTier}&rec_tier=${recTier}&limit=${limit}`;
+      let aiServerUrl = `${this.baseUrl}/recommend/${category}?query=${encodeURIComponent(query)}&mode=${mode}&sim_tier=${simTier}&rec_tier=${recTier}&limit=${limit}`;
 
       if (filters) aiServerUrl += `&filters=${encodeURIComponent(filters)}`;
       if (excludes) aiServerUrl += `&excludes=${encodeURIComponent(excludes)}`;
@@ -43,9 +48,10 @@ export class AppService {
     }
   }
 
+  // 필터 기준값 메타데이터 로드
   async getMetadata(): Promise<any> {
     try {
-      const response = await fetch('http://127.0.0.1:8000/metadata');
+      const response = await fetch(`${this.baseUrl}/metadata`);
       return await response.json();
     } catch (error) {
       console.error('Metadata 로드 에러:', error);

@@ -4,14 +4,14 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ★ CORS 설정 추가 (프론트엔드 5173 포트 허용) ★
+  // 클라우드 배포를 위해 모든 도메인 접속 임시 허용
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // React 앱의 주소
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 
-  await app.listen(3000);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  // Render가 제공하는 포트를 사용하거나 기본 3000번 포트 사용
+  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
