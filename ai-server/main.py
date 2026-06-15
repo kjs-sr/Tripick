@@ -91,12 +91,12 @@ except Exception as e:
     print(f"⚠️ 엔진 초기화 실패 (models 폴더 또는 추출 파일 확인 요망): {e}")
     game_rec = movie_rec = music_rec = None
 
-
-# --- 2. 헬퍼 함수 (DB 연동 및 연산) ---
-def fetch_top_candidates(table, id_col, top_ids):
-    # 유사도 최상위 N개의 게임 데이터만 DB에서 한 번에 긁어옴 (초고속/저메모리)
-    ids_str = ",".join(map(str, top_ids))
-    query = f"SELECT * FROM {table} WHERE {id_col} IN ({ids_str})"
+def fetch_top_candidates(table_name, id_col, top_ids):
+    # [수정됨] 배열 안의 모든 ID를 문자열로 바꾸고, 양옆에 홑따옴표(' ')를 씌워서 쉼표로 연결합니다.
+    # 이렇게 하면 문자열인 음악(track_id)도, 숫자인 게임(appid)도 모두 안전하게 검색됩니다.
+    formatted_ids = ", ".join([f"'{str(x)}'" for x in top_ids])
+    
+    query = f"SELECT * FROM {table_name} WHERE {id_col} IN ({formatted_ids})"
     return pd.read_sql(query, db_engine)
 
 
@@ -194,8 +194,10 @@ def recommend_game(query: str, mode: str="custom", sim_tier: int=5, rec_tier: in
         
         ref_date = datetime.now()
         days_diff = np.maximum(0, (ref_date - pd.to_datetime(res_df['release_date'], errors='coerce')).dt.days.fillna(99999))
-        res_df['rec_score'] = np.where(days_diff <= 90, 1.0 - (days_diff/90)*0.2, 0.8*np.exp(-0.0015*(days_diff-90)))
-        res_df['rec_score'] = np.clip(res_df['rec_score'], 0.005, 1.0)
+        res_df['recency_score'] = np.where(days_diff <= 90, 1.0 - (days_diff/90)*0.2, 0.8*np.exp(-0.0015*(days_diff-90)))
+        
+        # [수정됨] 최신성 점수(rec_score)에 추천도(w_brand)를 동기화하여 곱함
+        res_df['rec_score'] = np.clip(res_df['recency_score'], 0.005, 1.0) * w_brand
         
         res_df['total_score'] = res_df['sim_score'] + res_df['brand_score'] + res_df['rec_score']
     else:
@@ -240,8 +242,11 @@ def recommend_movie(query: str, mode: str="custom", sim_tier: int=5, rec_tier: i
         res_df['dir_score'] = res_df.get('dir_score_norm', res_df.get('Director_Evaluation_Score', pd.Series([0]*len(res_df)))) * w_rel
         ref_date = datetime.now()
         days_diff = np.maximum(0, (ref_date - pd.to_datetime(res_df['release_date'], errors='coerce')).dt.days.fillna(99999))
-        res_df['rec_score'] = np.where(days_diff <= 90, 1.0 - (days_diff/90)*0.2, 0.8*np.exp(-0.0015*(days_diff-90)))
-        res_df['rec_score'] = np.clip(res_df['rec_score'], 0.005, 1.0)
+        res_df['recency_score'] = np.where(days_diff <= 90, 1.0 - (days_diff/90)*0.2, 0.8*np.exp(-0.0015*(days_diff-90)))
+        
+        # [수정됨] 최신성 점수(rec_score)에 추천도(w_rel)를 동기화하여 곱함
+        res_df['rec_score'] = np.clip(res_df['recency_score'], 0.005, 1.0) * w_rel
+        
         res_df['total_score'] = res_df['sim_score'] + res_df['dir_score'] + res_df['rec_score']
     else:
         rel_norm = res_df.get('rel_score_norm', res_df.get('Total_Reliability_Score', pd.Series([0.5]*len(res_df))) / 10.0)
