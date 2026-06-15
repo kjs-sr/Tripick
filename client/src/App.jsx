@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 // --- 내장형 아이콘 컴포넌트 ---
 const Gamepad2 = ({ size = 24 }) => (
   <svg
@@ -330,6 +331,7 @@ const AlertCircle = ({ size = 24, className }) => (
 const mockDatabase = {
   game: [
     {
+      appid: 1,
       name: "DARK SOULS III",
       developer: "FromSoftware",
       genre_primary: "Action RPG",
@@ -341,6 +343,7 @@ const mockDatabase = {
   ],
   movie: [
     {
+      id: 1,
       title: "The Matrix",
       original_title: "The Matrix",
       directors: "Lana Wachowski",
@@ -354,6 +357,7 @@ const mockDatabase = {
   ],
   music: [
     {
+      track_id: "1",
       track_name: "Comedy",
       artists: "Gen Hoshino;Sun",
       track_genre: "J-Pop",
@@ -565,7 +569,7 @@ function ContentCard({ item, rank, onExclude }) {
               <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-slate-900 flex flex-col items-center justify-center p-6">
                 <AlertCircle size={36} className="text-gray-500 mb-3" />
                 <span className="text-gray-400 text-sm font-bold leading-relaxed whitespace-pre-line">
-                  연령 제한 콘텐츠이거나{"\n"}이미지를 불러올 수 없습니다.
+                  이미지를 불러올 수 없거나{"\n"}연령 제한 콘텐츠입니다.
                 </span>
               </div>
             )}
@@ -596,8 +600,8 @@ function ContentCard({ item, rank, onExclude }) {
           </div>
         )}
 
-        {/* 음악이 아니고 연도가 있을 때만 표시 (음악은 연도 숨김 처리 완벽 적용) */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+        {/* 음악이 아니고 연도 데이터가 있을 경우에만 하단 연도 표시 */}
         {item.category !== "music" && item.year && (
           <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
             <div className="flex items-center gap-2 mb-1">
@@ -661,6 +665,7 @@ function ContentCard({ item, rank, onExclude }) {
   );
 }
 
+// --- 공통 필터 요소 ---
 function IntensitySelector({ label, selected, onSelect, type, levels }) {
   const iconBg =
     type === "similarity"
@@ -728,11 +733,13 @@ function DualRangeSlider({
   const safeMaxValue = Math.max(Math.min(maxValue, safeMax), safeMinValue);
   const minPercent = ((safeMinValue - min) / (safeMax - min)) * 100;
   const maxPercent = ((safeMaxValue - min) / (safeMax - min)) * 100;
+
   const isFullRange = safeMinValue === min && safeMaxValue === safeMax;
   const trackColor = isFullRange ? "bg-gray-200" : activeBgColor;
   const badgeClass = isFullRange
     ? "bg-gray-100 text-gray-400 border-gray-200"
     : "bg-white text-gray-800 border-gray-300";
+
   const labelText = `${formatValue ? formatValue(safeMinValue) : safeMinValue} ~ ${formatValue ? formatValue(safeMaxValue) : safeMaxValue}`;
 
   return (
@@ -751,6 +758,7 @@ function DualRangeSlider({
           className={`absolute h-2 ${trackColor} rounded-full transition-colors duration-300`}
           style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
         ></div>
+
         <input
           type="range"
           min={min}
@@ -776,9 +784,18 @@ function DualRangeSlider({
           className="absolute w-full appearance-none bg-transparent pointer-events-none cursor-pointer"
           style={{ WebkitAppearance: "none", zIndex: 40 }}
         />
+
         <style
           dangerouslySetInnerHTML={{
-            __html: `input[type=range]::-webkit-slider-thumb { pointer-events: auto; width: 20px; height: 20px; -webkit-appearance: none; background: white; border: 2px solid ${isFullRange ? "#e5e7eb" : "#9ca3af"}; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: ew-resize; transition: border-color 0.3s; } input[type=range]::-webkit-slider-thumb:hover { border-color: #6b7280; }`,
+            __html: `
+          input[type=range]::-webkit-slider-thumb {
+            pointer-events: auto; width: 20px; height: 20px; -webkit-appearance: none;
+            background: white; border: 2px solid ${isFullRange ? "#e5e7eb" : "#9ca3af"}; border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: ew-resize;
+            transition: border-color 0.3s;
+          }
+          input[type=range]::-webkit-slider-thumb:hover { border-color: #6b7280; }
+        `,
           }}
         />
       </div>
@@ -786,7 +803,7 @@ function DualRangeSlider({
   );
 }
 
-// --- 이산형 범위 슬라이더 컴포넌트 ---
+// --- 이산형 범위 슬라이더 컴포넌트 (연령 등 제한된 옵션용) ---
 function DiscreteDualRangeSlider({
   options,
   minValue,
@@ -802,18 +819,23 @@ function DiscreteDualRangeSlider({
       ? options
       : [0, 12, 15, 18, 21];
   const maxLimit = safeOptions.length - 1;
+
   let minIdx = safeOptions.findIndex((o) => Number(o) === Number(minValue));
   if (minIdx < 0) minIdx = 0;
   let maxIdx = safeOptions.findIndex((o) => Number(o) === Number(maxValue));
   if (maxIdx < 0) maxIdx = maxLimit;
+
   const minPercent = maxLimit > 0 ? (minIdx / maxLimit) * 100 : 0;
   const maxPercent = maxLimit > 0 ? (maxIdx / maxLimit) * 100 : 0;
+
   const isFullRange = minIdx === 0 && maxIdx === maxLimit;
   const trackColor = isFullRange ? "bg-gray-200" : activeBgColor;
   const badgeClass = isFullRange
     ? "bg-gray-100 text-gray-400 border-gray-200"
     : "bg-white text-gray-800 border-gray-300";
-  const labelText = `${formatValue ? formatValue(safeOptions[minIdx]) : safeOptions[minIdx]} ~ ${formatValue ? formatValue(safeOptions[maxIdx]) : safeOptions[maxIdx]}`;
+
+  // 메인 배지에는 길게 표시되도록 포맷팅 속성 분리 (false = tick 아님)
+  const labelText = `${formatValue ? formatValue(safeOptions[minIdx], false) : safeOptions[minIdx]} ~ ${formatValue ? formatValue(safeOptions[maxIdx], false) : safeOptions[maxIdx]}`;
 
   return (
     <div className="w-full pb-6 relative">
@@ -831,6 +853,7 @@ function DiscreteDualRangeSlider({
           className={`absolute h-2 ${trackColor} rounded-full transition-colors duration-300`}
           style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
         ></div>
+
         <input
           type="range"
           min={0}
@@ -858,12 +881,22 @@ function DiscreteDualRangeSlider({
           className="absolute w-full appearance-none bg-transparent pointer-events-none cursor-pointer"
           style={{ WebkitAppearance: "none", zIndex: 40 }}
         />
+
         <style
           dangerouslySetInnerHTML={{
-            __html: `input[type=range]::-webkit-slider-thumb { pointer-events: auto; width: 20px; height: 20px; -webkit-appearance: none; background: white; border: 2px solid ${isFullRange ? "#e5e7eb" : "#9ca3af"}; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: ew-resize; transition: border-color 0.3s; } input[type=range]::-webkit-slider-thumb:hover { border-color: #6b7280; }`,
+            __html: `
+          input[type=range]::-webkit-slider-thumb {
+            pointer-events: auto; width: 20px; height: 20px; -webkit-appearance: none;
+            background: white; border: 2px solid ${isFullRange ? "#e5e7eb" : "#9ca3af"}; border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: ew-resize;
+            transition: border-color 0.3s;
+          }
+          input[type=range]::-webkit-slider-thumb:hover { border-color: #6b7280; }
+        `,
           }}
         />
       </div>
+
       <div className="absolute w-full mt-1 flex justify-between px-2.5">
         {safeOptions.map((opt, i) => (
           <div
@@ -875,8 +908,9 @@ function DiscreteDualRangeSlider({
             }}
           >
             <div className="w-0.5 h-1.5 bg-gray-300 mb-0.5"></div>
+            {/* 하단 눈금(Tick)은 짧게 표시되도록 포맷팅 속성 분리 (true = tick 맞음) */}
             <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-              {formatValue ? formatValue(opt) : opt}
+              {formatValue ? formatValue(opt, true) : opt}
             </span>
           </div>
         ))}
@@ -1183,7 +1217,7 @@ export default function App() {
   const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
-  // 선택된 항목의 고유 ID 저장용 상태
+  // 선택된 항목의 고유 ID 저장용 상태 (정확한 매칭 용도)
   const [selectedItemId, setSelectedItemId] = useState(null);
 
   const [similarity, setSimilarity] = useState("medium");
@@ -1224,32 +1258,33 @@ export default function App() {
   const [metadataErrorMsg, setMetadataErrorMsg] = useState("");
   const [searchSessionId, setSearchSessionId] = useState(Date.now());
 
+  // [UI 복구] 실제 데이터셋 스케일에 맞춘 완벽한 초기 상태 복구 (1997년, 21세 등)
   const [filterMeta, setFilterMeta] = useState({
     game: {
-      minYear: 1950,
-      maxYear: 2025,
+      minYear: 1997,
+      maxYear: 2024,
       minPrice: 0,
-      maxPrice: 999,
+      maxPrice: 100,
       minAge: 0,
-      maxAge: 18,
-      ageOptions: [12, 15, 18],
+      maxAge: 21,
+      ageOptions: [12, 15, 18, 21],
     },
-    movie: { minYear: 1900, maxYear: 2025 },
-    music: { minDuration: 0, maxDuration: 3600 },
+    movie: { minYear: 1970, maxYear: 2024 },
+    music: { minDuration: 0, maxDuration: 600 },
   });
 
   const [filters, setFilters] = useState({
-    gameStartYear: 1950,
-    gameEndYear: 2025,
+    gameStartYear: 1997,
+    gameEndYear: 2024,
     minPrice: 0,
-    maxPrice: 999,
+    maxPrice: 100,
     isFree: false,
     gameMinAge: 0,
-    gameMaxAge: 18,
-    movieStartYear: 1900,
-    movieEndYear: 2025,
+    gameMaxAge: 21,
+    movieStartYear: 1970,
+    movieEndYear: 2024,
     musicMinDuration: 0,
-    musicMaxDuration: 3600,
+    musicMaxDuration: 600,
     explicit: false,
     mood: "",
   });
@@ -1340,7 +1375,7 @@ export default function App() {
             minPrice: 0,
             maxPrice: 100,
             minAge: 0,
-            maxAge: 18,
+            maxAge: 21,
             ageOptions: [12, 15, 18, 21],
           },
           movie: { minYear: 1970, maxYear: 2024 },
@@ -1508,7 +1543,6 @@ export default function App() {
   const handleSuggestionClick = (item) => {
     const { searchKey } = renderSuggestion(item);
     setSearchTerm(searchKey);
-    // 선택 항목의 고유 ID를 확실하게 캡처하여 저장
     setSelectedItemId(item.appid || item.id || item.track_id);
     setIsValidSelection(true);
     setShowSuggestions(false);
@@ -1605,7 +1639,6 @@ export default function App() {
     e?.preventDefault();
     if (!searchTerm.trim()) return;
 
-    // 미리보기 항목을 클릭하여 고유 ID를 가져온 상태가 아니면 검색 완전 차단
     if (!isValidSelection || !selectedItemId) {
       setError(
         "검색창 아래의 '자동완성 목록'에서 정확한 작품을 클릭하여 선택해주세요.\n(동명이인 방지 및 정확한 매칭을 위해 필수입니다.)",
@@ -1626,7 +1659,6 @@ export default function App() {
       recommendationLevels.find((l) => l.id === recommendation)?.value || 2;
 
     try {
-      // 서버로 보낼 파라미터에 target_id를 확실하게 포함
       const queryParams = new URLSearchParams({
         category: activeTab,
         query: searchTerm,
@@ -1671,7 +1703,7 @@ export default function App() {
         setResults(normalized);
         setView("results");
       } else {
-        setError("필터 조건에 맞는 테스트용 결과가 없습니다.");
+        setError("필터 조건에 맞는 결과가 없습니다.");
       }
     } finally {
       setLoading(false);
@@ -1815,7 +1847,7 @@ export default function App() {
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
                     setIsValidSelection(false);
-                    setSelectedItemId(null); // 사용자가 임의로 글자를 수정하면 ID 무효화
+                    setSelectedItemId(null);
                     setShowSuggestions(true);
                     setError(null);
                   }}
@@ -1934,6 +1966,23 @@ export default function App() {
                     <Loader2 size={32} className="animate-spin text-teal-500" />
                   </div>
                 )}
+
+                {metadataStatus === "fallback" && (
+                  <div className="mb-6 p-4 bg-amber-50 text-amber-700 rounded-xl border border-amber-200 text-sm font-bold flex items-center gap-3 animate-fade-in">
+                    <AlertCircle size={20} className="shrink-0" />
+                    <div>
+                      백엔드 서버와 연결할 수 없어{" "}
+                      <b>로컬 데이터 테스트 모드</b>로 동작합니다.
+                      <br />
+                      <span className="font-medium">
+                        슬라이더 범위는 실제 데이터셋의 기준(예: 게임
+                        1997~2024년)으로 정상 적용되어 있습니다.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* [UI 복구] 무료(Free), 전체이용가, 청소년이용불가 등 직관적인 문구 표시 복구 완료 */}
                 {metadataStatus !== "loading" && activeTab === "game" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
                     <DualRangeSlider
@@ -1960,11 +2009,12 @@ export default function App() {
                       onChangeMin={(val) => handleFilterChange("minPrice", val)}
                       onChangeMax={(val) => handleFilterChange("maxPrice", val)}
                       activeBgColor="bg-teal-500"
-                      formatValue={(v) =>
-                        v === filterMeta.game.maxPrice
-                          ? `$${filterMeta.game.maxPrice}+`
-                          : `$${v}`
-                      }
+                      formatValue={(v) => {
+                        if (v === 0) return "무료(Free)";
+                        if (v >= filterMeta.game.maxPrice)
+                          return `$${filterMeta.game.maxPrice} 이상`;
+                        return `$${v}`;
+                      }}
                     />
                     <div className="md:col-span-2">
                       <DiscreteDualRangeSlider
@@ -1979,7 +2029,11 @@ export default function App() {
                           handleFilterChange("gameMaxAge", val)
                         }
                         activeBgColor="bg-teal-500"
-                        formatValue={(v) => (v === 0 ? "전체이용가" : `${v}세`)}
+                        formatValue={(v, isTick) => {
+                          if (v === 0) return isTick ? "전체" : "전체이용가";
+                          if (v >= 18) return isTick ? "18+" : "청소년이용불가";
+                          return `${v}세`;
+                        }}
                       />
                     </div>
                     <div className="flex items-center mt-6">
@@ -2030,9 +2084,12 @@ export default function App() {
                         }
                         activeBgColor="bg-sky-500"
                         formatValue={(v) => {
+                          if (v === 0) return "0초";
                           const m = Math.floor(v / 60);
                           const s = v % 60;
-                          return `${m}분 ${s}초`;
+                          if (v >= filterMeta.music.maxDuration)
+                            return `${m}분 이상`;
+                          return m > 0 ? `${m}분 ${s}초` : `${s}초`;
                         }}
                       />
                     </div>
