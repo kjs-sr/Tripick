@@ -102,11 +102,39 @@ def read_root():
 
 @app.get("/metadata")
 def get_metadata():
+    # 기본 폴백(Fallback) 메타데이터
     meta = {
-        "game": {"minYear": 1997, "maxYear": 2024, "minPrice": 0, "maxPrice": 100, "minAge": 0, "maxAge": 18, "ageOptions": [12, 15, 18, 21]},
+        "game": {"minYear": 1997, "maxYear": 2024, "minPrice": 0, "maxPrice": 100, "minAge": 0, "maxAge": 18, "ageOptions": []},
         "movie": {"minYear": 1970, "maxYear": 2024},
         "music": {"minDuration": 0, "maxDuration": 600}
     }
+    
+    try:
+        # 1. 게임 메타데이터 DB 실시간 조회
+        game_stats = pd.read_sql("SELECT MIN(release_date) as min_date, MAX(release_date) as max_date, MAX(price_initial) as max_price, MIN(required_age) as min_age, MAX(required_age) as max_age FROM games WHERE release_date IS NOT NULL", db_engine).iloc[0]
+        if pd.notna(game_stats['min_date']): meta['game']['minYear'] = int(str(game_stats['min_date'])[:4])
+        if pd.notna(game_stats['max_date']): meta['game']['maxYear'] = int(str(game_stats['max_date'])[:4])
+        if pd.notna(game_stats['max_price']): meta['game']['maxPrice'] = float(game_stats['max_price'])
+        if pd.notna(game_stats['min_age']): meta['game']['minAge'] = int(game_stats['min_age'])
+        if pd.notna(game_stats['max_age']): meta['game']['maxAge'] = int(game_stats['max_age'])
+        
+        # 실제 게임 데이터에 존재하는 고유 연령 제한 옵션(눈금) 조회
+        game_ages = pd.read_sql("SELECT DISTINCT required_age FROM games WHERE required_age > 0 ORDER BY required_age", db_engine)
+        if not game_ages.empty:
+            meta['game']['ageOptions'] = game_ages['required_age'].astype(int).tolist()
+
+        # 2. 영화 메타데이터 DB 실시간 조회
+        movie_stats = pd.read_sql("SELECT MIN(release_date) as min_date, MAX(release_date) as max_date FROM movies WHERE release_date IS NOT NULL", db_engine).iloc[0]
+        if pd.notna(movie_stats['min_date']): meta['movie']['minYear'] = int(str(movie_stats['min_date'])[:4])
+        if pd.notna(movie_stats['max_date']): meta['movie']['maxYear'] = int(str(movie_stats['max_date'])[:4])
+
+        # 3. 음악 메타데이터 DB 실시간 조회
+        music_stats = pd.read_sql("SELECT MAX(duration_ms) as max_duration FROM musics", db_engine).iloc[0]
+        if pd.notna(music_stats['max_duration']): meta['music']['maxDuration'] = int(music_stats['max_duration'] / 1000)
+
+    except Exception as e:
+        print(f"Metadata DB Fetch Error: {e}")
+        
     return {"status": "success", "data": meta}
 
 # ==========================
