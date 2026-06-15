@@ -601,7 +601,7 @@ function ContentCard({ item, rank, onExclude }) {
         )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
-        {/* 음악이 아니고 연도 데이터가 있을 경우에만 하단 연도 표시 */}
+        {/* 음악이 아니고 연도 데이터가 있을 경우에만 하단 연도 표시 (음악은 연도 숨김) */}
         {item.category !== "music" && item.year && (
           <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
             <div className="flex items-center gap-2 mb-1">
@@ -740,6 +740,7 @@ function DualRangeSlider({
     ? "bg-gray-100 text-gray-400 border-gray-200"
     : "bg-white text-gray-800 border-gray-300";
 
+  // 사용자가 요청한 원본 코드를 완벽히 반영
   const labelText = `${formatValue ? formatValue(safeMinValue) : safeMinValue} ~ ${formatValue ? formatValue(safeMaxValue) : safeMaxValue}`;
 
   return (
@@ -834,8 +835,8 @@ function DiscreteDualRangeSlider({
     ? "bg-gray-100 text-gray-400 border-gray-200"
     : "bg-white text-gray-800 border-gray-300";
 
-  // 메인 배지에는 길게 표시되도록 포맷팅 속성 분리 (false = tick 아님)
-  const labelText = `${formatValue ? formatValue(safeOptions[minIdx], false) : safeOptions[minIdx]} ~ ${formatValue ? formatValue(safeOptions[maxIdx], false) : safeOptions[maxIdx]}`;
+  // 사용자가 요청한 원본 코드 완벽 반영
+  const labelText = `${formatValue ? formatValue(safeOptions[minIdx]) : safeOptions[minIdx]} ~ ${formatValue ? formatValue(safeOptions[maxIdx]) : safeOptions[maxIdx]}`;
 
   return (
     <div className="w-full pb-6 relative">
@@ -908,9 +909,9 @@ function DiscreteDualRangeSlider({
             }}
           >
             <div className="w-0.5 h-1.5 bg-gray-300 mb-0.5"></div>
-            {/* 하단 눈금(Tick)은 짧게 표시되도록 포맷팅 속성 분리 (true = tick 맞음) */}
+            {/* 사용자가 요청한 원본 코드 완벽 반영 */}
             <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-              {formatValue ? formatValue(opt, true) : opt}
+              {formatValue ? formatValue(opt) : opt}
             </span>
           </div>
         ))}
@@ -1217,6 +1218,7 @@ export default function App() {
   const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
+
   // 선택된 항목의 고유 ID 저장용 상태 (정확한 매칭 용도)
   const [selectedItemId, setSelectedItemId] = useState(null);
 
@@ -1258,33 +1260,33 @@ export default function App() {
   const [metadataErrorMsg, setMetadataErrorMsg] = useState("");
   const [searchSessionId, setSearchSessionId] = useState(Date.now());
 
-  // [UI 복구] 실제 데이터셋 스케일에 맞춘 완벽한 초기 상태 복구 (1997년, 21세 등)
+  // [UI 복구 1] 아마도 원래 코드.txt에 명시된 완벽한 초기 상태 복구
   const [filterMeta, setFilterMeta] = useState({
     game: {
-      minYear: 1997,
-      maxYear: 2024,
+      minYear: 1950,
+      maxYear: 2025,
       minPrice: 0,
-      maxPrice: 100,
+      maxPrice: 999,
       minAge: 0,
-      maxAge: 21,
-      ageOptions: [12, 15, 18, 21],
+      maxAge: 18,
+      ageOptions: [12, 15, 18],
     },
-    movie: { minYear: 1970, maxYear: 2024 },
-    music: { minDuration: 0, maxDuration: 600 },
+    movie: { minYear: 1900, maxYear: 2025 },
+    music: { minDuration: 0, maxDuration: 3600 },
   });
 
   const [filters, setFilters] = useState({
-    gameStartYear: 1997,
-    gameEndYear: 2024,
+    gameStartYear: 1950,
+    gameEndYear: 2025,
     minPrice: 0,
-    maxPrice: 100,
+    maxPrice: 999,
     isFree: false,
     gameMinAge: 0,
-    gameMaxAge: 21,
-    movieStartYear: 1970,
-    movieEndYear: 2024,
+    gameMaxAge: 18,
+    movieStartYear: 1900,
+    movieEndYear: 2025,
     musicMinDuration: 0,
-    musicMaxDuration: 600,
+    musicMaxDuration: 3600,
     explicit: false,
     mood: "",
   });
@@ -1375,7 +1377,7 @@ export default function App() {
             minPrice: 0,
             maxPrice: 100,
             minAge: 0,
-            maxAge: 21,
+            maxAge: 18,
             ageOptions: [12, 15, 18, 21],
           },
           movie: { minYear: 1970, maxYear: 2024 },
@@ -1543,6 +1545,7 @@ export default function App() {
   const handleSuggestionClick = (item) => {
     const { searchKey } = renderSuggestion(item);
     setSearchTerm(searchKey);
+    // 선택 항목의 고유 ID를 확실하게 캡처하여 저장 (정확한 매칭 용도 유지)
     setSelectedItemId(item.appid || item.id || item.track_id);
     setIsValidSelection(true);
     setShowSuggestions(false);
@@ -1568,7 +1571,7 @@ export default function App() {
         creator: formattedArtists,
         genre: item.track_genre ? item.track_genre.split(",") : [],
         quality: item.popularity_norm || item.popularity || 0,
-        year: "", // 음악은 연도를 무조건 빈 문자열로 반환하여 UI에 노출되지 않도록 강제
+        year: "",
         image: item.poster_path || null,
       };
     } else if (category === "game") {
@@ -1692,7 +1695,7 @@ export default function App() {
         setResults(normalized);
         setView("results");
       } else {
-        setError("조건에 맞는 결과를 찾지 못했습니다.\n필터를 완화해보세요.");
+        setError("필터 조건에 맞는 결과가 없습니다.");
       }
     } catch (err) {
       console.warn("백엔드 미연결: 로컬 데이터로 UI만 테스트합니다.");
@@ -1982,7 +1985,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* [UI 복구] 무료(Free), 전체이용가, 청소년이용불가 등 직관적인 문구 표시 복구 완료 */}
+                {/* [UI 복구 2] 아마도 원래 코드.txt에 명시된 원본 범위 슬라이더 및 포맷 함수 로직 복구 완료 */}
                 {metadataStatus !== "loading" && activeTab === "game" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
                     <DualRangeSlider
@@ -2009,13 +2012,13 @@ export default function App() {
                       onChangeMin={(val) => handleFilterChange("minPrice", val)}
                       onChangeMax={(val) => handleFilterChange("maxPrice", val)}
                       activeBgColor="bg-teal-500"
-                      formatValue={(v) => {
-                        if (v === 0) return "무료(Free)";
-                        if (v >= filterMeta.game.maxPrice)
-                          return `$${filterMeta.game.maxPrice} 이상`;
-                        return `$${v}`;
-                      }}
+                      formatValue={(v) =>
+                        v === filterMeta.game.maxPrice
+                          ? `$${filterMeta.game.maxPrice}+`
+                          : `$${v}`
+                      }
                     />
+
                     <div className="md:col-span-2">
                       <DiscreteDualRangeSlider
                         label="연령 제한 범위"
@@ -2029,13 +2032,10 @@ export default function App() {
                           handleFilterChange("gameMaxAge", val)
                         }
                         activeBgColor="bg-teal-500"
-                        formatValue={(v, isTick) => {
-                          if (v === 0) return isTick ? "전체" : "전체이용가";
-                          if (v >= 18) return isTick ? "18+" : "청소년이용불가";
-                          return `${v}세`;
-                        }}
+                        formatValue={(v) => (v === 0 ? "전체이용가" : `${v}세`)}
                       />
                     </div>
+
                     <div className="flex items-center mt-6">
                       <Toggle
                         label="무료 게임만 보기"
@@ -2084,12 +2084,9 @@ export default function App() {
                         }
                         activeBgColor="bg-sky-500"
                         formatValue={(v) => {
-                          if (v === 0) return "0초";
                           const m = Math.floor(v / 60);
                           const s = v % 60;
-                          if (v >= filterMeta.music.maxDuration)
-                            return `${m}분 이상`;
-                          return m > 0 ? `${m}분 ${s}초` : `${s}초`;
+                          return `${m}분 ${s}초`;
                         }}
                       />
                     </div>
