@@ -19,7 +19,7 @@ export class AppService {
     }
   }
 
-  // 필터, 제외 목록, 강도를 모두 묶어서 AI 서버로 넘겨줌
+  // 필터, 제외 목록, 강도, 그리고 정확한 매칭을 위한 타겟 ID까지 모두 AI 서버로 넘겨줌
   async getRecommendation(
     category: string,
     query: string,
@@ -29,12 +29,14 @@ export class AppService {
     limit: number,
     filters?: string,
     excludes?: string,
+    targetId?: string, // 추가: 고유 식별자 수신
   ): Promise<any> {
     try {
       let aiServerUrl = `${this.baseUrl}/recommend/${category}?query=${encodeURIComponent(query)}&mode=${mode}&sim_tier=${simTier}&rec_tier=${recTier}&limit=${limit}`;
 
       if (filters) aiServerUrl += `&filters=${encodeURIComponent(filters)}`;
       if (excludes) aiServerUrl += `&excludes=${encodeURIComponent(excludes)}`;
+      if (targetId) aiServerUrl += `&target_id=${encodeURIComponent(targetId)}`; // ID 쿼리 파라미터 추가
 
       const response = await fetch(aiServerUrl);
       const data = await response.json();
@@ -48,7 +50,6 @@ export class AppService {
     }
   }
 
-  // 필터 기준값 메타데이터 로드
   async getMetadata(): Promise<any> {
     try {
       const response = await fetch(`${this.baseUrl}/metadata`);

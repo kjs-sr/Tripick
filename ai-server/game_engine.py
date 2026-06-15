@@ -60,8 +60,12 @@ class AdvancedSteamRecommender:
             excludes = filters['exclude_games']
             if isinstance(excludes, list):
                 title_col = 'name' if 'name' in res_df.columns else 'title'
-                exclude_names = [str(x).lower().strip() for x in excludes]
-                res_df = res_df[~res_df[title_col].astype(str).str.lower().str.strip().isin(exclude_names)]
+                exclude_names = [str(x).lower().strip() for x in excludes if not str(x).isdigit()]
+                exclude_ids = [int(x) for x in excludes if str(x).isdigit()]
+                if exclude_names:
+                    res_df = res_df[~res_df[title_col].astype(str).str.lower().str.strip().isin(exclude_names)]
+                if exclude_ids:
+                    res_df = res_df[~res_df['appid'].isin(exclude_ids)]
         
         if 'start_date' in filters or 'end_date' in filters:
             res_df['temp_release_date'] = pd.to_datetime(res_df['release_date'], errors='coerce')
@@ -92,7 +96,7 @@ class AdvancedSteamRecommender:
 
         return res_df
 
-    def recommend(self, target_title, filters=None, top_n=10, sim_tier=7, rev_tier=2):
+    def recommend(self, target_title, filters=None, top_n=10, sim_tier=7, rev_tier=2, target_id=None):
         display_cols = [
             'appid', 'name', 'genre_primary', 'developer', 'similarity', 'positive_ratio_norm', 
             'sim_score', 'rev_score', 'total_score', 'release_date'
@@ -100,8 +104,11 @@ class AdvancedSteamRecommender:
         
         title_col = 'name' if 'name' in self.df.columns else 'title'
 
-        search_query = str(target_title).lower().strip()
-        target_rows = self.df[self.df[title_col].astype(str).str.lower().str.strip() == search_query]
+        if target_id is not None:
+            target_rows = self.df[self.df['appid'].astype(str) == str(target_id)]
+        else:
+            search_query = str(target_title).lower().strip()
+            target_rows = self.df[self.df[title_col].astype(str).str.lower().str.strip() == search_query]
         
         if target_rows.empty:
             return pd.DataFrame()
@@ -129,7 +136,7 @@ class AdvancedSteamRecommender:
         existing_cols = [c for c in display_cols if c in top_results.columns]
         return top_results[existing_cols]
 
-    def recommend_trending(self, target_title, filters=None, top_n=10, sim_tier=5, brand_tier=3):
+    def recommend_trending(self, target_title, filters=None, top_n=10, sim_tier=5, brand_tier=3, target_id=None):
         display_cols = [
             'appid', 'name', 'genre_primary', 'developer', 'similarity', 'brand_fame_norm', 
             'recency_score', 'sim_score', 'brand_score', 'rec_score', 'total_score', 'release_date'
@@ -137,8 +144,11 @@ class AdvancedSteamRecommender:
         
         title_col = 'name' if 'name' in self.df.columns else 'title'
 
-        search_query = str(target_title).lower().strip()
-        target_rows = self.df[self.df[title_col].astype(str).str.lower().str.strip() == search_query]
+        if target_id is not None:
+            target_rows = self.df[self.df['appid'].astype(str) == str(target_id)]
+        else:
+            search_query = str(target_title).lower().strip()
+            target_rows = self.df[self.df[title_col].astype(str).str.lower().str.strip() == search_query]
         
         if target_rows.empty:
             return pd.DataFrame()
@@ -165,8 +175,6 @@ class AdvancedSteamRecommender:
         
         res_df['sim_score'] = res_df['similarity'] * w_sim
         res_df['brand_score'] = res_df['brand_fame_norm'] * w_brand
-        
-        # [수정됨] 최신성 점수(rec_score)에 추천도(w_brand)를 동기화하여 곱함
         res_df['rec_score'] = res_df['recency_score'] * w_brand
         
         res_df['total_score'] = res_df['sim_score'] + res_df['brand_score'] + res_df['rec_score']

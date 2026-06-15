@@ -10,12 +10,12 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 from sklearn.metrics.pairwise import cosine_similarity
+from typing import Optional
 
 # ==============================================================================
 # 🚨 [배포 최적화] 환경 변수(ENV) 기반 DB 연결 (보안 강화)
 # Render 환경 변수에 설정한 DATABASE_URL을 최우선으로 가져오고, 없으면 로컬 테스트용을 씁니다.
 # ==============================================================================
-# 로컬에서 테스트하실 때는 아래 "로컬_테스트용_URL" 부분에 본인의 URL을 임시로 넣고 돌리셔도 됩니다.
 DB_URL = os.getenv("DATABASE_URL", "로컬_테스트용_URL")
 
 if DB_URL.startswith("postgres://"):
@@ -25,7 +25,6 @@ db_engine = create_engine(DB_URL, pool_size=5, max_overflow=10)
 
 app = FastAPI(title="Tripick AI 통합 추천 엔진 (클라우드 배포 버전)")
 
-# 배포 환경을 위해 모든 오리진(*) 허용 (추후 보안이 필요하면 특정 도메인만 열어둘 수 있습니다)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -92,13 +91,9 @@ except Exception as e:
     game_rec = movie_rec = music_rec = None
 
 def fetch_top_candidates(table_name, id_col, top_ids):
-    # [수정됨] 배열 안의 모든 ID를 문자열로 바꾸고, 양옆에 홑따옴표(' ')를 씌워서 쉼표로 연결합니다.
-    # 이렇게 하면 문자열인 음악(track_id)도, 숫자인 게임(appid)도 모두 안전하게 검색됩니다.
     formatted_ids = ", ".join([f"'{str(x)}'" for x in top_ids])
-    
     query = f"SELECT * FROM {table_name} WHERE {id_col} IN ({formatted_ids})"
     return pd.read_sql(query, db_engine)
-
 
 # --- 3. API 엔드포인트 ---
 @app.get("/")
@@ -107,7 +102,6 @@ def read_root():
 
 @app.get("/metadata")
 def get_metadata():
-    # 필터 슬라이더 범위 기준값
     meta = {
         "game": {"minYear": 1997, "maxYear": 2024, "minPrice": 0, "maxPrice": 100, "minAge": 0, "maxAge": 18, "ageOptions": [12, 15, 18, 21]},
         "movie": {"minYear": 1970, "maxYear": 2024},
@@ -142,27 +136,30 @@ def search_music(query: str = Query(...)):
 # ==========================
 # 하이브리드 추천 엔진 (DB + 벡터 인덱스)
 # ==========================
+# 파라미터에 target_id를 수신하여 검색 쿼리 없이 다이렉트로 매칭합니다.
 @app.get("/recommend/game")
-def recommend_game(query: str, mode: str="custom", sim_tier: int=5, rec_tier: int=2, limit: int=10, filters: str=None, excludes: str=None):
+def recommend_game(query: str, mode: str="custom", sim_tier: int=5, rec_tier: int=2, limit: int=10, filters: str=None, excludes: str=None, target_id: Optional[str]=None):
     if not game_rec: return {"status": "fail", "message": "엔진 에러"}
     
-    # 1. 타겟 게임 찾기 (DB)
-    sql = "SELECT appid FROM games WHERE name ILIKE %(q)s LIMIT 1"
-    target_df = pd.read_sql(sql, db_engine, params={"q": f"{query}"})
-    if target_df.empty: return {"status": "fail"}
-    target_id = target_df['appid'].iloc[0]
+    # 전달받은 타겟 ID가 있으면 SQL 텍스트 검색을 과감히 생략하여 동명이인 오류 원천 방지
+    if target_id:
+        target_id = int(target_id) if str(target_id).isdigit() else target_id
+    else:
+        sql = "SELECT appid FROM games WHERE name ILIKE %(q)s LIMIT 1"
+        target_df = pd.read_sql(sql, db_engine, params={"q": f"{query}"})
+        if target_df.empty: return {"status": "fail"}
+        target_id = target_df['appid'].iloc[0]
 
-    # 2. 벡터 유사도로 상위 300개 1차 추출 (0.01초 소요)
     sim_scores = game_rec.get_sim_scores(target_id)
+    if sim_scores is None: return {"status": "fail", "message": "해당 게임을 인덱스에서 찾을 수 없습니다."}
+    
     top_indices = sim_scores.argsort()[::-1][:300]
     top_ids = [game_rec.ids[i] for i in top_indices]
     sim_dict = {game_rec.ids[i]: sim_scores[i] for i in top_indices}
 
-    # 3. 추출된 300개의 데이터만 DB에서 상세 정보 조회 (Pandas 부담 극소화)
     res_df = fetch_top_candidates("games", "appid", top_ids)
     res_df['similarity'] = res_df['appid'].map(sim_dict)
 
-    # 4. 사용자 지정 필터 가동
     parsed_filters = json.loads(filters) if filters else {}
     if excludes:
         parsed_excludes = json.loads(excludes)
@@ -183,7 +180,6 @@ def recommend_game(query: str, mode: str="custom", sim_tier: int=5, rec_tier: in
         tf = 1 if parsed_filters['is_free'] else 0
         res_df = res_df[res_df['is_free'].astype(int) == tf]
 
-    # 5. 가중치 점수 산출
     w_sim = (sim_tier / 10.0) ** 1.0
     
     if mode == "trend":
@@ -195,10 +191,7 @@ def recommend_game(query: str, mode: str="custom", sim_tier: int=5, rec_tier: in
         ref_date = datetime.now()
         days_diff = np.maximum(0, (ref_date - pd.to_datetime(res_df['release_date'], errors='coerce')).dt.days.fillna(99999))
         res_df['recency_score'] = np.where(days_diff <= 90, 1.0 - (days_diff/90)*0.2, 0.8*np.exp(-0.0015*(days_diff-90)))
-        
-        # [수정됨] 최신성 점수(rec_score)에 추천도(w_brand)를 동기화하여 곱함
         res_df['rec_score'] = np.clip(res_df['recency_score'], 0.005, 1.0) * w_brand
-        
         res_df['total_score'] = res_df['sim_score'] + res_df['brand_score'] + res_df['rec_score']
     else:
         w_rev = 0.25 * ((rec_tier / 10.0) ** 1.5)
@@ -211,14 +204,20 @@ def recommend_game(query: str, mode: str="custom", sim_tier: int=5, rec_tier: in
     return {"status": "success", "data": res_df.head(limit).to_dict(orient='records')}
 
 @app.get("/recommend/movie")
-def recommend_movie(query: str, mode: str="custom", sim_tier: int=5, rec_tier: int=2, limit: int=10, filters: str=None, excludes: str=None):
+def recommend_movie(query: str, mode: str="custom", sim_tier: int=5, rec_tier: int=2, limit: int=10, filters: str=None, excludes: str=None, target_id: Optional[str]=None):
     if not movie_rec: return {"status": "fail"}
-    sql = "SELECT id, title, original_title FROM movies WHERE title ILIKE %(q)s OR original_title ILIKE %(q)s LIMIT 1"
-    target_df = pd.read_sql(sql, db_engine, params={"q": f"{query}"})
-    if target_df.empty: return {"status": "fail"}
-    target_id = target_df['id'].iloc[0]
+    
+    if target_id:
+        target_id = int(target_id) if str(target_id).isdigit() else target_id
+    else:
+        sql = "SELECT id, title, original_title FROM movies WHERE title ILIKE %(q)s OR original_title ILIKE %(q)s LIMIT 1"
+        target_df = pd.read_sql(sql, db_engine, params={"q": f"{query}"})
+        if target_df.empty: return {"status": "fail"}
+        target_id = target_df['id'].iloc[0]
 
     sim_scores = movie_rec.get_sim_scores(target_id)
+    if sim_scores is None: return {"status": "fail", "message": "인덱스 오류"}
+    
     top_indices = sim_scores.argsort()[::-1][:300]
     top_ids = [movie_rec.ids[i] for i in top_indices]
     sim_dict = {movie_rec.ids[i]: sim_scores[i] for i in top_indices}
@@ -243,10 +242,7 @@ def recommend_movie(query: str, mode: str="custom", sim_tier: int=5, rec_tier: i
         ref_date = datetime.now()
         days_diff = np.maximum(0, (ref_date - pd.to_datetime(res_df['release_date'], errors='coerce')).dt.days.fillna(99999))
         res_df['recency_score'] = np.where(days_diff <= 90, 1.0 - (days_diff/90)*0.2, 0.8*np.exp(-0.0015*(days_diff-90)))
-        
-        # [수정됨] 최신성 점수(rec_score)에 추천도(w_rel)를 동기화하여 곱함
         res_df['rec_score'] = np.clip(res_df['recency_score'], 0.005, 1.0) * w_rel
-        
         res_df['total_score'] = res_df['sim_score'] + res_df['dir_score'] + res_df['rec_score']
     else:
         rel_norm = res_df.get('rel_score_norm', res_df.get('Total_Reliability_Score', pd.Series([0.5]*len(res_df))) / 10.0)
@@ -257,14 +253,21 @@ def recommend_movie(query: str, mode: str="custom", sim_tier: int=5, rec_tier: i
     return {"status": "success", "data": res_df.head(limit).to_dict(orient='records')}
 
 @app.get("/recommend/music")
-def recommend_music(query: str, mode: str="custom", sim_tier: int=5, rec_tier: int=2, limit: int=10, filters: str=None, excludes: str=None):
+def recommend_music(query: str, mode: str="custom", sim_tier: int=5, rec_tier: int=2, limit: int=10, filters: str=None, excludes: str=None, target_id: Optional[str]=None):
     if not music_rec: return {"status": "fail"}
-    sql = "SELECT track_id, track_name FROM musics WHERE track_name ILIKE %(q)s LIMIT 1"
-    target_df = pd.read_sql(sql, db_engine, params={"q": f"{query}"})
-    if target_df.empty: return {"status": "fail"}
-    target_id = target_df['track_id'].iloc[0]
+    
+    if target_id:
+        # 음악의 track_id는 문자열이므로 그대로 사용합니다.
+        pass
+    else:
+        sql = "SELECT track_id, track_name FROM musics WHERE track_name ILIKE %(q)s LIMIT 1"
+        target_df = pd.read_sql(sql, db_engine, params={"q": f"{query}"})
+        if target_df.empty: return {"status": "fail"}
+        target_id = target_df['track_id'].iloc[0]
 
     sim_scores = music_rec.get_sim_scores(target_id)
+    if sim_scores is None: return {"status": "fail", "message": "인덱스 오류"}
+    
     top_indices = sim_scores.argsort()[::-1][:300]
     top_ids = [music_rec.ids[i] for i in top_indices]
     sim_dict = {music_rec.ids[i]: sim_scores[i] for i in top_indices}

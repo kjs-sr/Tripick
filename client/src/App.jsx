@@ -338,24 +338,6 @@ const mockDatabase = {
       positive_reviews_rate: 0.94,
       release_date: "2016-04-12",
     },
-    {
-      name: "Elden Ring",
-      developer: "FromSoftware",
-      genre_primary: "Action RPG",
-      total_score: 0.88,
-      similarity: 85,
-      positive_reviews_rate: 0.95,
-      release_date: "2022-02-25",
-    },
-    {
-      name: "Lies of P",
-      developer: "NEOWIZ",
-      genre_primary: "Action RPG",
-      total_score: 0.82,
-      similarity: 79,
-      positive_reviews_rate: 0.89,
-      release_date: "2023-09-18",
-    },
   ],
   movie: [
     {
@@ -369,17 +351,6 @@ const mockDatabase = {
       release_date: "1999-03-31",
       poster_path: "/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
     },
-    {
-      title: "Inception",
-      original_title: "Inception",
-      directors: "Christopher Nolan",
-      genres: "Action, Sci-Fi",
-      total_score: 0.88,
-      similarity: 82,
-      Total_Reliability_Score: 8.8,
-      release_date: "2010-07-16",
-      poster_path: "/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
-    },
   ],
   music: [
     {
@@ -390,18 +361,9 @@ const mockDatabase = {
       similarity: 85,
       popularity: 85,
     },
-    {
-      track_name: "Shape of You",
-      artists: "Ed Sheeran;Pop",
-      track_genre: "Pop",
-      total_score: 0.82,
-      similarity: 78,
-      popularity: 90,
-    },
   ],
 };
 
-// --- 비율 3, 5, 7 / 1, 2, 3 설정 ---
 const similarityLevels = [
   { id: "weak", label: "약함", description: "폭넓은 탐색", value: 3 },
   { id: "medium", label: "보통", description: "균형잡힌 추천", value: 5 },
@@ -466,8 +428,7 @@ function ExcludedItemsModal({
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
         <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
           <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <ListXIcon size={22} className="text-red-500" />
-            추천 제외 목록 관리
+            <ListXIcon size={22} className="text-red-500" /> 추천 제외 목록 관리
           </h3>
           <button
             onClick={onClose}
@@ -482,11 +443,7 @@ function ExcludedItemsModal({
             <button
               key={t.id}
               onClick={() => setModalTab(t.id)}
-              className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
-                modalTab === t.id
-                  ? "border-teal-500 text-teal-700 bg-white rounded-t-lg"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-t-lg"
-              }`}
+              className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${modalTab === t.id ? "border-teal-500 text-teal-700 bg-white rounded-t-lg" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-t-lg"}`}
             >
               {t.label}
               <span
@@ -540,9 +497,6 @@ function ExcludedItemsModal({
               <p className="text-gray-500 font-medium">
                 제외된 항목이 없습니다.
               </p>
-              <p className="text-xs text-gray-400 mt-1">
-                해당 탭의 추천 결과에서 '제외하기'를 누르면 등록됩니다.
-              </p>
             </div>
           )}
         </div>
@@ -576,8 +530,6 @@ function ContentCard({ item, rank, onExclude }) {
       "from-fuchsia-600 via-purple-600 to-indigo-600",
       "from-emerald-400 via-teal-500 to-cyan-600",
       "from-rose-400 via-fuchsia-500 to-indigo-500",
-      "from-indigo-400 via-purple-400 to-pink-400",
-      "from-slate-700 via-purple-800 to-slate-900",
     ];
     let hash = 0;
     const targetStr = String(str || "music");
@@ -593,7 +545,6 @@ function ContentCard({ item, rank, onExclude }) {
 
   return (
     <div className="group relative bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full transition-transform duration-300">
-      {/* 랭킹 뱃지 */}
       <div className="absolute top-3 right-3 z-10">
         <div className="flex items-center justify-center px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg font-extrabold border border-white/20 tracking-wider">
           <span className="text-sm">#{rank}</span>
@@ -610,7 +561,6 @@ function ContentCard({ item, rank, onExclude }) {
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 relative">
-            {/* 게임 이미지 실패 시 */}
             {item.category === "game" && (
               <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-slate-900 flex flex-col items-center justify-center p-6">
                 <AlertCircle size={36} className="text-gray-500 mb-3" />
@@ -619,8 +569,6 @@ function ContentCard({ item, rank, onExclude }) {
                 </span>
               </div>
             )}
-
-            {/* 음악 이미지 API 부재 시 (자체 그라데이션 커버 생성) */}
             {item.category === "music" && (
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${getMusicGradient(item.id || item.title)} flex flex-col items-center justify-center p-6 opacity-90`}
@@ -637,8 +585,6 @@ function ContentCard({ item, rank, onExclude }) {
                 </span>
               </div>
             )}
-
-            {/* 영화 이미지 실패 시 */}
             {item.category === "movie" && (
               <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-slate-900 flex flex-col items-center justify-center">
                 <Film size={48} className="text-gray-600 mb-3" />
@@ -650,19 +596,20 @@ function ContentCard({ item, rank, onExclude }) {
           </div>
         )}
 
-        {/* 하단 그라데이션 및 연도 표시 */}
+        {/* 음악이 아니고 연도가 있을 때만 표시 (음악은 연도 숨김 처리 완벽 적용) */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
-        <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-medium shadow-sm">
-              {item.year || "Unknown"}
-            </span>
+        {item.category !== "music" && item.year && (
+          <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-medium shadow-sm">
+                {item.year}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="p-6 flex flex-col flex-1">
-        {/* 원어 제목이 메인, 영문 제목이 서브 */}
         <h3
           className="font-extrabold text-gray-900 text-2xl leading-tight mb-1 line-clamp-1"
           title={item.title}
@@ -748,11 +695,7 @@ function IntensitySelector({ label, selected, onSelect, type, levels }) {
               type="button"
               key={level.id}
               onClick={() => onSelect(level.id)}
-              className={`flex-1 relative px-2 py-3 rounded-xl transition-all duration-300 ${
-                isSelected
-                  ? `bg-gradient-to-br ${intensityGradient} shadow-md border-transparent`
-                  : "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 hover:border-gray-300"
-              }`}
+              className={`flex-1 relative px-2 py-3 rounded-xl transition-all duration-300 ${isSelected ? `bg-gradient-to-br ${intensityGradient} shadow-md border-transparent` : "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 hover:border-gray-300"}`}
             >
               <div className="font-bold text-sm mb-0.5">{level.label}</div>
               <div
@@ -783,12 +726,9 @@ function DualRangeSlider({
   const safeMax = Math.max(max, min + 1);
   const safeMinValue = Math.min(Math.max(minValue, min), safeMax);
   const safeMaxValue = Math.max(Math.min(maxValue, safeMax), safeMinValue);
-
   const minPercent = ((safeMinValue - min) / (safeMax - min)) * 100;
   const maxPercent = ((safeMaxValue - min) / (safeMax - min)) * 100;
-
   const isFullRange = safeMinValue === min && safeMaxValue === safeMax;
-
   const trackColor = isFullRange ? "bg-gray-200" : activeBgColor;
   const badgeClass = isFullRange
     ? "bg-gray-100 text-gray-400 border-gray-200"
@@ -811,7 +751,6 @@ function DualRangeSlider({
           className={`absolute h-2 ${trackColor} rounded-full transition-colors duration-300`}
           style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
         ></div>
-
         <input
           type="range"
           min={min}
@@ -837,18 +776,9 @@ function DualRangeSlider({
           className="absolute w-full appearance-none bg-transparent pointer-events-none cursor-pointer"
           style={{ WebkitAppearance: "none", zIndex: 40 }}
         />
-
         <style
           dangerouslySetInnerHTML={{
-            __html: `
-          input[type=range]::-webkit-slider-thumb {
-            pointer-events: auto; width: 20px; height: 20px; -webkit-appearance: none;
-            background: white; border: 2px solid ${isFullRange ? "#e5e7eb" : "#9ca3af"}; border-radius: 50%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: ew-resize;
-            transition: border-color 0.3s;
-          }
-          input[type=range]::-webkit-slider-thumb:hover { border-color: #6b7280; }
-        `,
+            __html: `input[type=range]::-webkit-slider-thumb { pointer-events: auto; width: 20px; height: 20px; -webkit-appearance: none; background: white; border: 2px solid ${isFullRange ? "#e5e7eb" : "#9ca3af"}; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: ew-resize; transition: border-color 0.3s; } input[type=range]::-webkit-slider-thumb:hover { border-color: #6b7280; }`,
           }}
         />
       </div>
@@ -856,7 +786,7 @@ function DualRangeSlider({
   );
 }
 
-// --- 이산형(Discrete) 스냅 범위 슬라이더 컴포넌트 ---
+// --- 이산형 범위 슬라이더 컴포넌트 ---
 function DiscreteDualRangeSlider({
   options,
   minValue,
@@ -872,16 +802,12 @@ function DiscreteDualRangeSlider({
       ? options
       : [0, 12, 15, 18, 21];
   const maxLimit = safeOptions.length - 1;
-
   let minIdx = safeOptions.findIndex((o) => Number(o) === Number(minValue));
   if (minIdx < 0) minIdx = 0;
-
   let maxIdx = safeOptions.findIndex((o) => Number(o) === Number(maxValue));
   if (maxIdx < 0) maxIdx = maxLimit;
-
   const minPercent = maxLimit > 0 ? (minIdx / maxLimit) * 100 : 0;
   const maxPercent = maxLimit > 0 ? (maxIdx / maxLimit) * 100 : 0;
-
   const isFullRange = minIdx === 0 && maxIdx === maxLimit;
   const trackColor = isFullRange ? "bg-gray-200" : activeBgColor;
   const badgeClass = isFullRange
@@ -905,7 +831,6 @@ function DiscreteDualRangeSlider({
           className={`absolute h-2 ${trackColor} rounded-full transition-colors duration-300`}
           style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
         ></div>
-
         <input
           type="range"
           min={0}
@@ -933,22 +858,12 @@ function DiscreteDualRangeSlider({
           className="absolute w-full appearance-none bg-transparent pointer-events-none cursor-pointer"
           style={{ WebkitAppearance: "none", zIndex: 40 }}
         />
-
         <style
           dangerouslySetInnerHTML={{
-            __html: `
-          input[type=range]::-webkit-slider-thumb {
-            pointer-events: auto; width: 20px; height: 20px; -webkit-appearance: none;
-            background: white; border: 2px solid ${isFullRange ? "#e5e7eb" : "#9ca3af"}; border-radius: 50%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: ew-resize;
-            transition: border-color 0.3s;
-          }
-          input[type=range]::-webkit-slider-thumb:hover { border-color: #6b7280; }
-        `,
+            __html: `input[type=range]::-webkit-slider-thumb { pointer-events: auto; width: 20px; height: 20px; -webkit-appearance: none; background: white; border: 2px solid ${isFullRange ? "#e5e7eb" : "#9ca3af"}; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: ew-resize; transition: border-color 0.3s; } input[type=range]::-webkit-slider-thumb:hover { border-color: #6b7280; }`,
           }}
         />
       </div>
-
       <div className="absolute w-full mt-1 flex justify-between px-2.5">
         {safeOptions.map((opt, i) => (
           <div
@@ -980,11 +895,7 @@ function SingleChips({ options, selected, onChange, activeColor, activeBg }) {
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-              isSelected
-                ? `${activeBg} ${activeColor} shadow-sm border-transparent`
-                : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 border"
-            }`}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${isSelected ? `${activeBg} ${activeColor} shadow-sm border-transparent` : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 border"}`}
           >
             {opt.label}
           </button>
@@ -1033,7 +944,6 @@ function ResultsView({
   useEffect(() => {
     setCurrentIndex(0);
   }, [results]);
-
   useEffect(() => {
     if (currentIndex >= results.length && results.length > 0) {
       setCurrentIndex(Math.max(0, results.length - 1));
@@ -1041,12 +951,10 @@ function ResultsView({
   }, [results.length, currentIndex]);
 
   const minSwipeDistance = 50;
-
   const goToNext = () => {
     if (results.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % results.length);
   };
-
   const goToPrev = () => {
     if (results.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 + results.length) % results.length);
@@ -1056,11 +964,9 @@ function ResultsView({
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
-
   const onTouchMove = (e) => {
     setTouchEnd(e.targetTouches[0].clientX);
   };
-
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
@@ -1073,14 +979,12 @@ function ResultsView({
     setTouchEnd(null);
     setTouchStart(e.clientX);
   };
-
   const onMouseMove = (e) => {
     if (!isDragging) return;
     if (touchStart !== null) {
       setTouchEnd(e.clientX);
     }
   };
-
   const onMouseUp = () => {
     setIsDragging(false);
     if (!touchStart || !touchEnd) {
@@ -1090,11 +994,9 @@ function ResultsView({
     const distance = touchStart - touchEnd;
     if (distance > minSwipeDistance) goToNext();
     if (distance < -minSwipeDistance) goToPrev();
-
     setTouchStart(null);
     setTouchEnd(null);
   };
-
   const onMouseLeave = () => {
     if (isDragging) {
       onMouseUp();
@@ -1120,7 +1022,6 @@ function ResultsView({
               다시 검색하기
             </span>
           </button>
-
           <button
             onClick={onOpenExcludeModal}
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group"
@@ -1174,7 +1075,6 @@ function ResultsView({
             <div className="relative w-full h-[550px] flex items-center justify-center">
               {results.map((item, index) => {
                 let diff = index - currentIndex;
-
                 if (
                   diff < -1 &&
                   currentIndex === results.length - 1 &&
@@ -1191,7 +1091,6 @@ function ResultsView({
                 const isCurrent = diff === 0;
                 const isPrev = diff === -1;
                 const isNext = diff === 1;
-
                 let translateX = "0%";
                 let scale = 0.7;
                 let opacity = 0;
@@ -1284,6 +1183,8 @@ export default function App() {
   const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
+  // 선택된 항목의 고유 ID 저장용 상태
+  const [selectedItemId, setSelectedItemId] = useState(null);
 
   const [similarity, setSimilarity] = useState("medium");
   const [recommendation, setRecommendation] = useState("medium");
@@ -1294,10 +1195,8 @@ export default function App() {
   const [isValidSelection, setIsValidSelection] = useState(false);
   const dropdownRef = useRef(null);
 
-  // ★ 최적화: 검색어 자동완성 결과를 로컬에 임시 저장(캐싱)하기 위한 Ref
   const searchCache = useRef({});
 
-  // 탭이 바뀔 때 캐시 초기화
   useEffect(() => {
     searchCache.current = {};
   }, [activeTab]);
@@ -1320,12 +1219,9 @@ export default function App() {
   }, [excludedItems]);
 
   const [isExcludeModalOpen, setIsExcludeModalOpen] = useState(false);
-
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
   const [metadataStatus, setMetadataStatus] = useState("loading");
   const [metadataErrorMsg, setMetadataErrorMsg] = useState("");
-
   const [searchSessionId, setSearchSessionId] = useState(Date.now());
 
   const [filterMeta, setFilterMeta] = useState({
@@ -1362,7 +1258,6 @@ export default function App() {
   const revCategoryMap = { game: "games", movie: "movies", music: "music" };
   const currentUiTab = revCategoryMap[activeTab];
   const currentTabConfig = tabs.find((t) => t.id === currentUiTab);
-
   const showSubTabs = activeTab === "game" || activeTab === "movie";
 
   useEffect(() => {
@@ -1372,7 +1267,6 @@ export default function App() {
       try {
         let res = null;
         let data = null;
-
         try {
           res = await fetch(`${API_BASE_URL}/api/metadata?_t=${Date.now()}`, {
             cache: "no-store",
@@ -1470,7 +1364,6 @@ export default function App() {
         setMetadataErrorMsg(err.message);
       }
     };
-
     fetchMetadata();
   }, []);
 
@@ -1484,18 +1377,15 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ★ 자동완성 미리보기 속도 최적화 로직 적용 (캐싱 + 딜레이 단축)
   useEffect(() => {
     const query = searchTerm.trim();
 
-    // 1글자 미만이거나 이미 선택된 상태면 미리보기 창을 닫음
     if (query.length < 1 || isValidSelection) {
       setSuggestions([]);
       setIsSuggesting(false);
       return;
     }
 
-    // ★ 캐싱 로직: 동일한 탭에서 이미 검색해 본 키워드는 서버 요청 없이 메모리에서 즉시 꺼내옴
     const cacheKey = `${activeTab}_${query.toLowerCase()}`;
     if (searchCache.current[cacheKey]) {
       setSuggestions(searchCache.current[cacheKey]);
@@ -1505,7 +1395,6 @@ export default function App() {
 
     setIsSuggesting(true);
 
-    // ★ 디바운스(Debounce) 대기 시간을 300ms에서 150ms로 대폭 단축하여 반응성을 두 배로 끌어올림
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
@@ -1513,16 +1402,14 @@ export default function App() {
           { cache: "no-store" },
         );
         const data = await res.json();
-
         if (data.status === "success" && data.data) {
           const results = data.data.slice(0, 10);
-          searchCache.current[cacheKey] = results; // 성공한 결과 캐싱
+          searchCache.current[cacheKey] = results;
           setSuggestions(results);
         } else {
           throw new Error("API failed");
         }
       } catch (err) {
-        // 백엔드 미연결 시 로컬 모의(Mock) 데이터 검색 로직
         const mockData = mockDatabase[activeTab] || [];
         const filtered = mockData.filter((item) => {
           const title = (
@@ -1536,7 +1423,7 @@ export default function App() {
           return title.includes(q) || origTitle.includes(q);
         });
         const results = filtered.slice(0, 10);
-        searchCache.current[cacheKey] = results; // 모의 결과도 캐싱
+        searchCache.current[cacheKey] = results;
         setSuggestions(results);
       } finally {
         setIsSuggesting(false);
@@ -1575,19 +1462,14 @@ export default function App() {
     }));
     setResults((prev) => prev.filter((r) => r.id !== item.id));
   };
-
   const handleRestore = (category, title) => {
     setExcludedItems((prev) => ({
       ...prev,
       [category]: prev[category].filter((t) => t !== title),
     }));
   };
-
   const handleRestoreAll = (category) => {
-    setExcludedItems((prev) => ({
-      ...prev,
-      [category]: [],
-    }));
+    setExcludedItems((prev) => ({ ...prev, [category]: [] }));
   };
 
   const renderSuggestion = (item) => {
@@ -1610,12 +1492,10 @@ export default function App() {
       const mainTitle = item.original_title || item.title || "";
       const engTitle = item.title !== item.original_title ? item.title : "";
       const directorInfo = item.directors ? `감독: ${item.directors}` : "";
-
       let subText = engTitle;
       if (directorInfo) {
         subText = subText ? `${engTitle} | ${directorInfo}` : directorInfo;
       }
-
       return {
         displayTitle: mainTitle,
         displaySub: subText,
@@ -1628,6 +1508,8 @@ export default function App() {
   const handleSuggestionClick = (item) => {
     const { searchKey } = renderSuggestion(item);
     setSearchTerm(searchKey);
+    // 선택 항목의 고유 ID를 확실하게 캡처하여 저장
+    setSelectedItemId(item.appid || item.id || item.track_id);
     setIsValidSelection(true);
     setShowSuggestions(false);
     setError(null);
@@ -1652,7 +1534,7 @@ export default function App() {
         creator: formattedArtists,
         genre: item.track_genre ? item.track_genre.split(",") : [],
         quality: item.popularity_norm || item.popularity || 0,
-        year: item.release_date ? item.release_date.substring(0, 4) : "",
+        year: "", // 음악은 연도를 무조건 빈 문자열로 반환하여 UI에 노출되지 않도록 강제
         image: item.poster_path || null,
       };
     } else if (category === "game") {
@@ -1723,9 +1605,10 @@ export default function App() {
     e?.preventDefault();
     if (!searchTerm.trim()) return;
 
-    if (!isValidSelection) {
+    // 미리보기 항목을 클릭하여 고유 ID를 가져온 상태가 아니면 검색 완전 차단
+    if (!isValidSelection || !selectedItemId) {
       setError(
-        "목록에서 정확한 작품을 선택해주세요.\n(데이터베이스에 존재하지 않는 검색어입니다)",
+        "검색창 아래의 '자동완성 목록'에서 정확한 작품을 클릭하여 선택해주세요.\n(동명이인 방지 및 정확한 매칭을 위해 필수입니다.)",
       );
       return;
     }
@@ -1737,16 +1620,17 @@ export default function App() {
 
     const appliedFilters = getBackendFilters();
     const currentExcluded = excludedItems[activeTab] || [];
-
     const simValue =
       similarityLevels.find((l) => l.id === similarity)?.value || 5;
     const recValue =
       recommendationLevels.find((l) => l.id === recommendation)?.value || 2;
 
     try {
+      // 서버로 보낼 파라미터에 target_id를 확실하게 포함
       const queryParams = new URLSearchParams({
         category: activeTab,
         query: searchTerm,
+        target_id: selectedItemId,
         mode: subTab,
         sim_tier: simValue.toString(),
         rec_tier: recValue.toString(),
@@ -1763,15 +1647,11 @@ export default function App() {
 
       const response = await fetch(
         `${API_BASE_URL}/api/recommend?${queryParams.toString()}`,
-        {
-          cache: "no-store",
-        },
+        { cache: "no-store" },
       );
-
       if (!response.ok) throw new Error("API Connect Error");
 
       const data = await response.json();
-
       if (data.status === "success" && data.data && data.data.length > 0) {
         const normalized = data.data.map((item) =>
           normalizeData(item, activeTab),
@@ -1785,30 +1665,6 @@ export default function App() {
     } catch (err) {
       console.warn("백엔드 미연결: 로컬 데이터로 UI만 테스트합니다.");
       let data = mockDatabase[activeTab] || [];
-
-      data = data.filter((item) => {
-        const title = item.name || item.title || item.track_name || "";
-        const origTitle = item.original_title || "";
-        return (
-          title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          origTitle.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      });
-
-      if (currentExcluded.length > 0) {
-        data = data.filter((item) => {
-          const title = item.name || item.title || item.track_name;
-          return !currentExcluded.includes(title);
-        });
-      }
-      if (appliedFilters && isFilterOpen) {
-        if (activeTab === "game" && appliedFilters.min_price !== undefined) {
-          data = data.filter(
-            (d) => (d.price_initial || 0) >= appliedFilters.min_price,
-          );
-        }
-      }
-
       if (data.length > 0) {
         const normalized = data.map((item) => normalizeData(item, activeTab));
         setSearchSessionId(Date.now());
@@ -1827,6 +1683,7 @@ export default function App() {
     setError(null);
     setSearchTerm("");
     setIsValidSelection(false);
+    setSelectedItemId(null);
     setSuggestions([]);
     if (tabId === "music") {
       setSubTab("custom");
@@ -1910,11 +1767,7 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
-                  currentUiTab === tab.id
-                    ? `bg-white text-gray-900 shadow-lg scale-105`
-                    : "text-white/80 hover:text-white hover:bg-white/20"
-                }`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 ${currentUiTab === tab.id ? `bg-white text-gray-900 shadow-lg scale-105` : "text-white/80 hover:text-white hover:bg-white/20"}`}
               >
                 {tab.icon}
                 <span>{tab.label}</span>
@@ -1931,11 +1784,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setSubTab("custom")}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
-                  subTab === "custom"
-                    ? "bg-teal-600 text-white shadow-md shadow-teal-500/30"
-                    : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-gray-200"
-                }`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 ${subTab === "custom" ? "bg-teal-600 text-white shadow-md shadow-teal-500/30" : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-gray-200"}`}
               >
                 <Sparkles size={18} />
                 <span>맞춤형 추천</span>
@@ -1943,11 +1792,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setSubTab("trend")}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
-                  subTab === "trend"
-                    ? "bg-amber-500 text-white shadow-md shadow-amber-500/30"
-                    : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-gray-200"
-                }`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 ${subTab === "trend" ? "bg-amber-500 text-white shadow-md shadow-amber-500/30" : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-800 border border-gray-200"}`}
               >
                 <TrendingUp size={18} />
                 <span>트렌드 추천</span>
@@ -1970,6 +1815,7 @@ export default function App() {
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
                     setIsValidSelection(false);
+                    setSelectedItemId(null); // 사용자가 임의로 글자를 수정하면 ID 무효화
                     setShowSuggestions(true);
                     setError(null);
                   }}
@@ -1991,7 +1837,6 @@ export default function App() {
                 />
               </div>
 
-              {/* 검색 자동완성 드롭다운 UI */}
               {showSuggestions &&
                 searchTerm.trim().length > 0 &&
                 !isValidSelection && (
@@ -2059,11 +1904,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
-                  isFilterOpen
-                    ? "bg-teal-50 text-teal-600 border border-teal-200 shadow-sm"
-                    : "bg-white text-gray-400 border border-gray-200 hover:bg-gray-50 hover:text-gray-600"
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${isFilterOpen ? "bg-teal-50 text-teal-600 border border-teal-200 shadow-sm" : "bg-white text-gray-400 border border-gray-200 hover:bg-gray-50 hover:text-gray-600"}`}
               >
                 <FilterIcon size={14} />
                 {isFilterOpen ? "상세 필터 닫기" : "상세 필터 열기"}
@@ -2073,7 +1914,6 @@ export default function App() {
                   <ChevronDown size={14} />
                 )}
               </button>
-
               {isFilterOpen && (
                 <button
                   type="button"
@@ -2086,11 +1926,7 @@ export default function App() {
             </div>
 
             <div
-              className={`transition-all duration-500 ease-in-out origin-top ${
-                isFilterOpen
-                  ? "max-h-[2000px] opacity-100 mb-8 overflow-visible"
-                  : "max-h-0 opacity-0 overflow-hidden m-0"
-              }`}
+              className={`transition-all duration-500 ease-in-out origin-top ${isFilterOpen ? "max-h-[2000px] opacity-100 mb-8 overflow-visible" : "max-h-0 opacity-0 overflow-hidden m-0"}`}
             >
               <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
                 {metadataStatus === "loading" && (
@@ -2098,22 +1934,6 @@ export default function App() {
                     <Loader2 size={32} className="animate-spin text-teal-500" />
                   </div>
                 )}
-
-                {metadataStatus === "fallback" && (
-                  <div className="mb-6 p-4 bg-amber-50 text-amber-700 rounded-xl border border-amber-200 text-sm font-bold flex items-center gap-3 animate-fade-in">
-                    <AlertCircle size={20} className="shrink-0" />
-                    <div>
-                      백엔드 서버와 연결할 수 없어{" "}
-                      <b>로컬 데이터 테스트 모드</b>로 동작합니다.
-                      <br />
-                      <span className="font-medium">
-                        슬라이더 범위는 실제 데이터셋의 기준(예: 게임
-                        1997~2024년)으로 정상 적용되어 있습니다.
-                      </span>
-                    </div>
-                  </div>
-                )}
-
                 {metadataStatus !== "loading" && activeTab === "game" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
                     <DualRangeSlider
@@ -2146,7 +1966,6 @@ export default function App() {
                           : `$${v}`
                       }
                     />
-
                     <div className="md:col-span-2">
                       <DiscreteDualRangeSlider
                         label="연령 제한 범위"
@@ -2163,7 +1982,6 @@ export default function App() {
                         formatValue={(v) => (v === 0 ? "전체이용가" : `${v}세`)}
                       />
                     </div>
-
                     <div className="flex items-center mt-6">
                       <Toggle
                         label="무료 게임만 보기"
@@ -2176,7 +1994,6 @@ export default function App() {
                     </div>
                   </div>
                 )}
-
                 {metadataStatus !== "loading" && activeTab === "movie" && (
                   <div className="grid grid-cols-1 gap-8 animate-fade-in">
                     <DualRangeSlider
@@ -2196,7 +2013,6 @@ export default function App() {
                     />
                   </div>
                 )}
-
                 {metadataStatus !== "loading" && activeTab === "music" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
                     <div className="md:col-span-2">
@@ -2220,7 +2036,6 @@ export default function App() {
                         }}
                       />
                     </div>
-
                     <div>
                       <label className="text-sm font-bold text-gray-700 block mb-2">
                         곡 분위기 (Mode)
@@ -2255,11 +2070,7 @@ export default function App() {
             <button
               type="submit"
               disabled={!searchTerm.trim() || loading}
-              className={`w-full py-5 bg-gradient-to-r ${
-                subTab === "trend"
-                  ? "from-amber-500 via-orange-500 to-amber-600 shadow-amber-500/30"
-                  : "from-teal-500 via-emerald-500 to-teal-600 shadow-emerald-500/30"
-              } text-white text-xl font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3`}
+              className={`w-full py-5 bg-gradient-to-r ${subTab === "trend" ? "from-amber-500 via-orange-500 to-amber-600 shadow-amber-500/30" : "from-teal-500 via-emerald-500 to-teal-600 shadow-emerald-500/30"} text-white text-xl font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3`}
             >
               {loading ? (
                 <>
@@ -2280,7 +2091,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* 중앙 에러 모달창 */}
       {error && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 flex flex-col items-center text-center">

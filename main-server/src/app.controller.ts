@@ -18,7 +18,7 @@ export class AppController {
 
   // --- 아래부터는 프론트엔드가 호출할 /api/... 엔드포인트들 ---
 
-  // 필터 기준값 메타데이터 로드 (누락되었던 부분 추가!)
+  // 필터 기준값 메타데이터 로드
   @Get('api/metadata')
   async getMetadata() {
     return await this.appService.getMetadata();
@@ -45,6 +45,7 @@ export class AppController {
     @Query('limit') limit: string = '15',
     @Query('filters') filters: string,
     @Query('excludes') excludes: string,
+    @Query('target_id') targetId: string, // [수정됨] 프론트엔드에서 보낸 target_id 수신
   ) {
     if (!category || !query) {
       return {
@@ -62,6 +63,7 @@ export class AppController {
       Number(limit),
       filters,
       excludes,
+      targetId, // [수정됨] 서비스 계층으로 targetId 전달
     );
   }
 }

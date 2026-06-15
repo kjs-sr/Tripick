@@ -60,14 +60,17 @@ class HybridMovieRecommender:
 
         return res_df
 
-    def recommend(self, target_title, filters=None, top_n=10, sim_tier=5, rel_tier=2):
+    def recommend(self, target_title, filters=None, top_n=10, sim_tier=5, rel_tier=2, target_id=None):
         display_cols = [
             'id', 'title', 'original_title', 'directors', 'genres', 'similarity', 'rel_score_norm', 
             'sim_score', 'rel_score', 'total_score', 'release_date', 'poster_path'
         ]
 
-        search_query = str(target_title).lower().strip()
-        target_rows = self.df[self.df['title'].str.lower().str.strip() == search_query]
+        if target_id is not None:
+            target_rows = self.df[self.df['id'].astype(str) == str(target_id)]
+        else:
+            search_query = str(target_title).lower().strip()
+            target_rows = self.df[self.df['title'].str.lower().str.strip() == search_query]
         
         if target_rows.empty:
             return pd.DataFrame()
@@ -95,14 +98,17 @@ class HybridMovieRecommender:
         existing_cols = [c for c in display_cols if c in top_results.columns]
         return top_results[existing_cols]
 
-    def recommend_trending(self, target_title, filters=None, top_n=10, sim_tier=5, rel_tier=2):
+    def recommend_trending(self, target_title, filters=None, top_n=10, sim_tier=5, rel_tier=2, target_id=None):
         display_cols = [
             'id', 'title', 'original_title', 'directors', 'genres', 'similarity', 'dir_score_norm', 'recency_score', 
             'sim_score', 'dir_score', 'rec_score', 'total_score', 'release_date', 'poster_path'
         ]
 
-        search_query = str(target_title).lower().strip()
-        target_rows = self.df[self.df['title'].str.lower().str.strip() == search_query]
+        if target_id is not None:
+            target_rows = self.df[self.df['id'].astype(str) == str(target_id)]
+        else:
+            search_query = str(target_title).lower().strip()
+            target_rows = self.df[self.df['title'].str.lower().str.strip() == search_query]
         
         if target_rows.empty:
             return pd.DataFrame()
@@ -132,7 +138,6 @@ class HybridMovieRecommender:
         res_df['sim_score'] = res_df['similarity'] * w_sim
         res_df['dir_score'] = res_df['dir_score_norm'] * w_rel
         
-        # [수정됨] 최신성 점수(rec_score)에 추천도(w_rel)를 동기화하여 곱함
         res_df['rec_score'] = res_df['recency_score'] * w_rel
         
         res_df['total_score'] = res_df['sim_score'] + res_df['dir_score'] + res_df['rec_score']

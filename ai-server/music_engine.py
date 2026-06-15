@@ -71,26 +71,28 @@ class AdvancedMusicRecommender:
 
         return res_df
 
-    def recommend(self, target_track_name, target_artist=None, filters=None, top_n=10, sim_tier=5, pop_tier=2):
-        # 프론트 통신을 위해 필수로 고유 ID(track_id) 컬럼을 리턴 항목에 포함시킵니다.
+    # target_id를 수신하도록 업데이트
+    def recommend(self, target_track_name, target_artist=None, filters=None, top_n=10, sim_tier=5, pop_tier=2, target_id=None):
         display_cols = [
             'track_id', 'track_name', 'artists', 'track_genre', 'similarity', 'popularity',
             'sim_score', 'pop_score', 'total_score', 'duration_ms', 'explicit', 'mode'
         ]
 
-        search_query = str(target_track_name).lower().strip()
-        mask = self.df['track_name'].astype(str).str.lower().str.strip() == search_query
-        
-        if target_artist:
-            mask &= self.df['artists'].astype(str).str.lower().str.contains(str(target_artist).lower().strip())
-            
-        target_rows = self.df[mask]
+        if target_id is not None:
+            target_rows = self.df[self.df['track_id'].astype(str) == str(target_id)]
+        else:
+            search_query = str(target_track_name).lower().strip()
+            mask = self.df['track_name'].astype(str).str.lower().str.strip() == search_query
+            if target_artist:
+                mask &= self.df['artists'].astype(str).str.lower().str.contains(str(target_artist).lower().strip())
+            target_rows = self.df[mask]
         
         if target_rows.empty:
             return pd.DataFrame()
         
         target_idx = target_rows.sort_values(by='popularity', ascending=False).index[0]
         actual_target_artist = self.df.loc[target_idx, 'artists']
+        actual_target_name = self.df.loc[target_idx, 'track_name']
         
         sim_text = cosine_similarity(self.tfidf_matrix[target_idx], self.tfidf_matrix).flatten()
         sim_audio = cosine_similarity([self.audio_matrix[target_idx]], self.audio_matrix).flatten()
@@ -107,12 +109,12 @@ class AdvancedMusicRecommender:
 
         res_df = self._apply_filters(res_df, filters)
 
-        exclude_mask = (res_df['track_name'].str.lower() == search_query) & (res_df['artists'] == actual_target_artist)
+        exclude_mask = (res_df['track_name'].str.lower() == str(actual_target_name).lower()) & (res_df['artists'] == actual_target_artist)
         final_list = res_df[~exclude_mask].sort_values(by='total_score', ascending=False)
         top_results = final_list.head(top_n).copy()
         
         existing_cols = [c for c in display_cols if c in top_results.columns]
         return top_results[existing_cols]
 
-    def recommend_trending(self, target_track_name, target_artist=None, filters=None, top_n=10, sim_tier=5, pop_tier=2):
-        return self.recommend(target_track_name, target_artist, filters, top_n, sim_tier, pop_tier)
+    def recommend_trending(self, target_track_name, target_artist=None, filters=None, top_n=10, sim_tier=5, pop_tier=2, target_id=None):
+        return self.recommend(target_track_name, target_artist, filters, top_n, sim_tier, pop_tier, target_id)
